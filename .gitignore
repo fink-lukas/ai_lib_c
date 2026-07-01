@@ -1,0 +1,40 @@
+# Object files and libraries
+*.o
+*.ko
+*.obj
+*.elf
+*.a
+*.la
+*.lo
+*.so
+*.so.*
+
+# Compiled Graphics / Precompiled headers
+*.gch
+*.pch
+
+# Executables
+# (Linux binaries usually have no extension, so we ignore the entire build output directory)
+a.out
+*.out
+*.exe
+
+# Build directories
+build/
+bin/
+out/
+
+# Development environment (VS Code)
+# This ignores local editor states and caches, but explicitly preserves your working configuration files
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Linux OS-specific junk
+*~
+.directory
+.DS_Store
+
+# Sources (PDFs)
+sources/
