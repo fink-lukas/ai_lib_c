@@ -28,6 +28,8 @@ Perceptron* perceptron_create(int input_dim) {
         p->weights[i] = (float)rand() / (float)RAND_MAX * 2.0f - 1.0f;
     }
 
+    //TODO: Add mini batch support for computational advantages
+
     return p; 
 }
 

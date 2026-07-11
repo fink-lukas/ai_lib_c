@@ -38,3 +38,9 @@ out/
 
 # Sources (PDFs)
 sources/
+
+# python specific stuff
+.venv/
+
+# data for testing
+*.csv

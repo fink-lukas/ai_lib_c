@@ -1,74 +1,57 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "perceptron.h"
+#include "layer.h"
+#include "activations.h"
 
+float polynomial(float x){
+    //f(x) = 0.002 x^(4)-0.01f x^(3)-0.06f x^(2)-2
+    //return 0.002f * x * x * x * x - 0.01f * x * x * x -0.06f * x * x - 2.0f;
 
-float step_function(float total_sum) {
-    return (total_sum >= 0.0f) ? 1.0f : 0.0f;
+    //f(x)=0.02 x^(4)+0.01 x^(3)-0.6 x^(2)+0.3 x -4
+    return 0.02f * x * x * x * x + 0.01f * x * x * x - 0.6 * x * x + 0.3f * x - 4.0f; 
 }
 
 int main() {
+    
     srand(time(NULL));
 
-    float inputs[4][2] = {
-        {0.0f, 0.0f}, // 0 AND 0 = 0
-        {0.0f, 1.0f}, // 0 AND 1 = 0
-        {1.0f, 0.0f}, // 1 AND 0 = 0
-        {1.0f, 1.0f}  // 1 AND 1 = 1
-    };
-    float targets[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    Layer *l1 = layer_create(1, 8, TANH);
+    Layer *l2 = layer_create(8, 1, IDENTITY);
+    float lr = 0.001f;
 
-    Perceptron *p = perceptron_create(2);
-    if (p == NULL) {
-        printf("Failed to allocate perceptron!\n");
-        return 1;
+    float inputs[1];
+    float hidden_outputs[8];
+    float final_prediction[1];
+
+    float loss_gradient[1];
+    float hidden_errors[8];
+    float dummy_buffer[1];
+
+    //printf("Model initialized. Starting training (I hope lol)\n\n\n");
+
+    printf("EPOCH;X;TARGET;PREDICTION;ERROR\n");
+    for(int epoch = 0; epoch < 1000000; epoch ++){
+        float x = (float)rand() / RAND_MAX * 10 - 5;
+        float target = polynomial(x);
+        
+        //forward pass
+        inputs[0] = x;
+        layer_forward(l1, inputs, hidden_outputs);
+        layer_forward(l2, hidden_outputs, final_prediction);
+
+        loss_gradient[0] = final_prediction[0] - target;
+        printf("%i;%f;%f;%f;%f\n", epoch, x, target, final_prediction[0], loss_gradient[0]);
+
+
+
+        layer_backward(l2, loss_gradient, hidden_errors, lr);
+        layer_backward(l1, hidden_errors, dummy_buffer, lr);
+        
+        
+        
+        
+        //printf("f(%f) = %f\n", x, target);
     }
 
-    float learning_rate = 0.1f;
-    int epochs = 50; 
-
-    printf("--- STARTING TRAINING ---\n");
-
-    for (int epoch = 0; epoch < epochs; epoch++) {
-        int total_errors = 0;
-
-        for (int i = 0; i < 4; i++) {
-            float raw_sum = perceptron_forward(p, inputs[i]);
-            
-            float prediction = step_function(raw_sum);
-            
-            float error = targets[i] - prediction;
-
-            if (error != 0.0f) {
-                total_errors++;
-
-
-                for(int j = 0; j < p->input_dim; j++){
-                    p->weights[j] += learning_rate * error * inputs[i][j];
-                }
-
-                p->bias += learning_rate * error;
-
-            }
-        }
-
-        if (total_errors == 0) {
-            printf("Converged early at epoch %d!\n", epoch + 1);
-            break;
-        }
-    }
-
-    printf("\n--- FINAL TRUTH TABLE VERIFICATION ---\n");
-    for (int i = 0; i < 4; i++) {
-        float raw_sum = perceptron_forward(p, inputs[i]);
-        float prediction = step_function(raw_sum);
-        printf("In: [%.0f, %.0f] | Target: %.0f | Predicted: %.0f\n", 
-               inputs[i][0], inputs[i][1], targets[i], prediction);
-    }
-
-    perceptron_destroy(p);
-    p = NULL;
-
-    return 0;
 }
