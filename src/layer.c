@@ -102,3 +102,22 @@ void layer_forward(Layer *l, float *inputs, float *outputs){
     }
 
 }
+
+void layer_backward(Layer *l, float *upstream_gradients, float *downstream_gradients, float learning_rate){
+
+    for(int i = 0; i < l->input_dim; i++){
+        downstream_gradients[i] = 0.0f;
+    }
+
+    for(int j = 0; j < l->output_dim; j++){
+        l->deltas[j] = upstream_gradients[j] * l->activation_functions.der(l->outputs_pre_act[j]);
+        l->neurons[j]->bias -= learning_rate * l->deltas[j];
+
+
+        for(int i = 0; i < l->input_dim; i++){
+            downstream_gradients[i] += l->neurons[j]->weights[i] * l->deltas[j];
+            l->neurons[j]->weights[i] -= learning_rate * l->deltas[j] * l->last_inputs[i];
+        }
+
+    }
+}

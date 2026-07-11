@@ -22,7 +22,6 @@ Layer* layer_create(int input_dim, int output_dim, activation);
 void layer_destroy(Layer *l);
 
 void layer_forward(Layer *l, float *inputs, float *outputs);
-
-
+void layer_backward(Layer *l, float *upstream_gradients, float *downstream_gradients, float learning_rate);
 
 #endif
