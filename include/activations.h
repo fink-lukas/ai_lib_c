@@ -7,13 +7,13 @@ typedef float (*derivative)(float);
 typedef struct {
     activationFunction act;
     derivative der;
-} activation;
+} Activation;
 
-extern const activation IDENTITY;
-extern const activation BINARY_STEP;
-extern const activation SIGMOID;
-extern const activation TANH;
-extern const activation SOFTSIGN;
-extern const activation RELU;
+extern const Activation IDENTITY;
+extern const Activation BINARY_STEP;
+extern const Activation SIGMOID;
+extern const Activation TANH;
+extern const Activation SOFTSIGN;
+extern const Activation RELU;
 
 #endif

@@ -6,10 +6,11 @@ float identity(float x){
 }
 
 float d_identity(float x){
+    (void)x;
     return 1.0f;
 }
 
-const activation IDENTITY = {
+const Activation IDENTITY = {
     .act = identity,
     .der = d_identity
 };
@@ -22,10 +23,11 @@ float binary_step(float x){
 }
 
 float d_binary_step(float x){
+    (void)x;
     return 0;
 }
 
-const activation BINARY_STEP = {
+const Activation BINARY_STEP = {
     .act = binary_step,
     .der = d_binary_step
 };
@@ -42,7 +44,7 @@ float d_sigmoid(float x){
     return sig*(1.0f - sig);
 }
 
-const activation SIGMOID = {
+const Activation SIGMOID = {
     .act = sigmoid,
     .der = d_sigmoid
 };
@@ -59,7 +61,7 @@ float d_net_tanh(float x){
 }
 
 
-const activation TANH = {
+const Activation TANH = {
     .act = net_tanh,
     .der = d_net_tanh
 };
@@ -84,7 +86,7 @@ float d_softsign(float x){
     return 1.0f / ((1.0f + absx) * (1.0f + absx));
 }
 
-const activation SOFTSIGN = {
+const Activation SOFTSIGN = {
     .act = softsign,
     .der = d_softsign
 };
@@ -103,7 +105,7 @@ float d_ReLu(float x){
     return 1.0f;
 }
 
-const activation RELU = {
+const Activation RELU = {
     .act = ReLu,
     .der = d_ReLu
 };

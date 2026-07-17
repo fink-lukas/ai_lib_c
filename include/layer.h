@@ -15,10 +15,10 @@ typedef struct {
     float *deltas;
 
     //pointer to activation function
-    activation activation_functions;
+    Activation activation_functions;
 } Layer;
 
-Layer* layer_create(int input_dim, int output_dim, activation);
+Layer* layer_create(int input_dim, int output_dim, Activation);
 void layer_destroy(Layer *l);
 
 void layer_forward(Layer *l, float *inputs, float *outputs);

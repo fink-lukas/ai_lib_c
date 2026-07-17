@@ -44,3 +44,6 @@ sources/
 
 # data for testing
 *.csv
+
+# training data
+data/

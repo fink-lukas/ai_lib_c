@@ -4,7 +4,7 @@
 #include "perceptron.h"
 
 
-Layer* layer_create(int input_dim, int output_dim, activation activation_function){
+Layer* layer_create(int input_dim, int output_dim, Activation activation_function){
     Layer* l = malloc(sizeof(Layer));
     if(l == NULL) {
         printf("ERROR: OOM");
@@ -89,8 +89,10 @@ void layer_destroy(Layer *l){
 void layer_forward(Layer *l, float *inputs, float *outputs){
     if(l == NULL || inputs == NULL || outputs == NULL) return;
 
-    for(int i = 0; i < l->input_dim; i++){
-        l->last_inputs[i] = inputs[i];
+    if(l->last_inputs != inputs){
+        for(int i = 0; i < l->input_dim; i++){
+            l->last_inputs[i] = inputs[i];
+        }
     }
 
     for(int output = 0; output < l->output_dim; output++){
