@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "perceptron.h"
 
 Perceptron* perceptron_create(int input_dim) {
@@ -23,9 +24,12 @@ Perceptron* perceptron_create(int input_dim) {
 
     p->input_dim = input_dim;
     p->bias = 0.0f;
+
+    float scale = sqrtf(2.0f / (float)input_dim);
     
     for(int i = 0; i < input_dim; i++){
-        p->weights[i] = (float)rand() / (float)RAND_MAX * 2.0f - 1.0f;
+        float random_value = (float)rand() / (float)RAND_MAX * 2.0f - 1.0f;
+        p->weights[i] = random_value * scale;
     }
 
     //TODO: Add mini batch support for computational advantages
