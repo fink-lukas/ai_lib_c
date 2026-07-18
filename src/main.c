@@ -1,9 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <time.h>
 // #include "layer.h"
 #include "activations.h"
 #include "network.h"
+
+uint32_t flip_endian(uint32_t num) {
+    return ((num >> 24) & 0x000000FF) |
+           ((num >> 8)  & 0x0000FF00) |
+           ((num << 8)  & 0x00FF0000) |
+           ((num << 24) & 0xFF000000);
+}
 
 float polynomial(float x){
     //f(x) = 0.002 x^(4)-0.01f x^(3)-0.06f x^(2)-2
@@ -13,35 +21,132 @@ float polynomial(float x){
     return 0.02f * x * x * x * x + 0.01f * x * x * x - 0.6 * x * x + 0.3f * x - 4.0f; 
 }
 
-int main() {
-    
-    srand(time(NULL));
+float* load_mnist_images(const char* filename, int* out_image_count){
+    FILE* file = fopen(filename, "rb");
 
-    int dims[] = {1, 8, 1};
-    Activation acts[] = {TANH, IDENTITY};    
-
-    Network *network = network_create(dims, acts, 3);
-    float lr = 0.001f;
-    float inputs[1];
-    float final_prediction[1];
-    float loss_gradient[1];
-
-
-
-    printf("EPOCH;X;TARGET;PREDICTION;ERROR\n");
-    for(int epoch = 0; epoch < 1000000; epoch ++){
-        float x = (float)rand() / RAND_MAX * 10 - 5;
-        float target = polynomial(x);
-        inputs[0] = x;
-
-        network_forward(network, inputs, final_prediction);
-
-        loss_gradient[0] = final_prediction[0] - target;
-        printf("%i;%f;%f;%f;%f\n", epoch, x, target, final_prediction[0], loss_gradient[0]);
-
-        network_backward(network, loss_gradient, lr);
+    if (!file) {
+        fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+        return NULL;
     }
 
+    uint32_t identifier = 0;
+    fread(&identifier, sizeof(uint32_t), 1, file);
+    identifier = flip_endian(identifier);
+    if(identifier != 2051) {
+        fprintf(stderr, "ERROR: Wrong File. Not image tensor file expected\n");
+        fclose(file);
+        return NULL;
+    }
+
+    uint32_t numberOfImages = 0;
+    fread(&numberOfImages, sizeof(uint32_t), 1, file);
+    numberOfImages = flip_endian(numberOfImages);
+    *out_image_count = (int)numberOfImages;
+
+    uint32_t rows = 0;
+    fread(&rows, sizeof(uint32_t), 1, file);
+    rows = flip_endian(rows);
+
+    uint32_t cols = 0;
+    fread(&cols, sizeof(uint32_t), 1, file);
+    cols = flip_endian(cols);
+
+    uint32_t data_points = numberOfImages * rows * cols;
+    unsigned char* raw_pixels = malloc(data_points * sizeof(unsigned char));
+
+    if (!raw_pixels) {
+        fprintf(stderr, "ERROR: Memory allocation failed for raw pixels\n");
+        fclose(file);
+        return NULL;
+    }
+
+    fread(raw_pixels, sizeof(unsigned char), data_points, file);
+
+    float* returnArray = malloc(data_points * sizeof(float));
+    if (!returnArray) {
+        fprintf(stderr, "ERROR: Memory allocation failed for return array\n");
+        free(raw_pixels);
+        fclose(file);
+        return NULL;
+    }
+
+    for(int i = 0; i < (int)data_points; i++){
+        returnArray[i] = (float)raw_pixels[i] / 255.0f;
+    }
+    free(raw_pixels);
+    fclose(file);
+    return returnArray;
+}
+
+float* load_mnist_labels(const char* filename, int* out_label_count){
+    FILE* file = fopen(filename, "rb");
+
+    if (!file) {
+        fprintf(stderr, "ERROR: Could not open file %s\n", filename);
+        return NULL;
+    }
+
+    uint32_t identifier = 0;
+    fread(&identifier, sizeof(uint32_t), 1, file);
+    identifier = flip_endian(identifier);
+    if(identifier != 2049) {
+        fprintf(stderr, "ERROR: Wrong File. Not image tensor file expected\n");
+        fclose(file);
+        return NULL;
+    }
+
+    uint32_t numberOfLabels = 0;
+    fread(&numberOfLabels, sizeof(uint32_t), 1, file);
+    numberOfLabels = flip_endian(numberOfLabels);
+    *out_label_count = (int)numberOfLabels;
+
+
+    unsigned char* raw_data = malloc(numberOfLabels * sizeof(unsigned char));
+    if(raw_data == NULL){
+        fprintf(stderr, "ERROR: Memory allocation failed for raw data\n");
+        fclose(file);
+        return NULL;
+    }
+
+    fread(raw_data, sizeof(unsigned char), numberOfLabels, file);
     
 
+    uint32_t total_floats = numberOfLabels * 10;
+    float* returnArray = calloc(total_floats, sizeof(float));
+
+    if(returnArray == NULL){
+        fprintf(stderr, "ERROR: Memory allocation failed for return array\n");
+        fclose(file);
+        free(raw_data);
+        return NULL;
+    }
+
+
+    for(int i = 0; i < (int)numberOfLabels; i++){
+        returnArray[i * 10 + (int)raw_data[i]] = 1.0f;
+    }
+
+    free(raw_data);
+    fclose(file);
+
+    return returnArray;
+}
+
+int main() {
+    int image_count = 0;
+    
+    // Adjust this path if your files are in the root or a different directory
+    float* images = load_mnist_images("data/train-images.idx3-ubyte", &image_count);
+    
+    if (!images) {
+        printf("Failed to load images. Check your file path string and terminal location.\n");
+        return 1;
+    }
+    
+    printf("Successfully parsed header! Total images in file: %d\n", image_count);
+    printf("Printing a rough preview of Image #0:\n\n");
+
+    
+    free(images);
+    return 0;
 }
