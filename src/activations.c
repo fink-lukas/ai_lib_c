@@ -1,13 +1,15 @@
 #include <math.h>
+#include <string.h>
 #include "activations.h"
 
-float identity(float x){
-    return x;
+void identity(const float* restrict inputs, float* restrict outputs, int size){
+    memcpy(outputs, inputs, size * sizeof(float));
 }
 
-float d_identity(float x){
-    (void)x;
-    return 1.0f;
+void d_identity(const float* restrict upstream_gradients, const float* restrict z, const float* restrict a, float* restrict deltas, int size){
+    (void)z;
+    (void)a;
+    memcpy(deltas, upstream_gradients, size * sizeof(float));
 }
 
 const Activation IDENTITY = {
@@ -17,14 +19,17 @@ const Activation IDENTITY = {
 
 
 
-float binary_step(float x){
-    if( x < 0) return 0;
-    return 1.0f;
+void binary_step(const float* restrict inputs, float* restrict outputs, int size) {
+    for (int i = 0; i < size; i++) {
+        outputs[i] = (inputs[i] >= 0.0f) ? 1.0f : 0.0f;
+    }
 }
 
-float d_binary_step(float x){
-    (void)x;
-    return 0;
+void d_binary_step(const float* restrict upstream_gradients, const float* restrict z, const float* restrict a, float* restrict deltas, int size){
+    (void)a;
+    (void)z;
+    (void) upstream_gradients;
+    memset(deltas, 0, size * sizeof(float));
 }
 
 const Activation BINARY_STEP = {
@@ -33,15 +38,20 @@ const Activation BINARY_STEP = {
 };
 
 
-
-
-float sigmoid(float x){
-    return 1.0f/(1.0f + expf(-x));
+void sigmoid(const float* restrict inputs, float* restrict outputs, int size){
+    for(int i = 0; i < size; i++){
+        outputs[i] = 1.0f/(1.0f + expf(-inputs[i]));
+    }
 }
 
-float d_sigmoid(float x){
-    float sig = sigmoid(x);
-    return sig*(1.0f - sig);
+
+void d_sigmoid(const float* restrict upstream_gradients, const float* restrict z, const float* restrict a, float* restrict deltas, int size){
+    //deltas = upstream_gradients * sigmoid(outputs) * (1.0f - sigmoid(outputs))
+    (void)z;
+    for(int i = 0; i < size; i++){
+        deltas[i] = upstream_gradients[i] * a[i] * (1.0f - a[i]);
+    }
+    
 }
 
 const Activation SIGMOID = {
@@ -50,16 +60,18 @@ const Activation SIGMOID = {
 };
 
 
-
-
-float net_tanh(float x){
-    return (expf(x) - expf(-x))/(expf(x) + expf(-x));
+void net_tanh(const float* restrict inputs, float* restrict outputs, int size){
+    for(int i = 0; i < size; i++){
+        outputs[i] = tanhf(inputs[i]);
+    }
 }
 
-float d_net_tanh(float x){
-    return 1.0f - net_tanh(x) * net_tanh(x);
+void d_net_tanh(const float* restrict upstream_gradients, const float* restrict z, const float* restrict a, float* restrict deltas, int size){
+    (void)z;
+    for(int i = 0; i < size; i++){
+        deltas[i] = upstream_gradients[i] * (1.0f - a[i] * a[i]);   
+    }
 }
-
 
 const Activation TANH = {
     .act = net_tanh,
@@ -67,23 +79,20 @@ const Activation TANH = {
 };
 
 
-
-//NOTE: smth(x) isn't included because I can't be bothered to do something smart about the function signature
-
-float softsign(float x){
-
-    float absx = x;
-    if(x < 0) absx = -x;
-
-    return x/(1.0f + absx);
+void softsign(const float* restrict inputs, float* restrict outputs, int size){
+    for(int i = 0; i < size; i++){
+        outputs[i] = inputs[i]/(1.0f + fabsf(inputs[i]));
+    }
 }
 
-float d_softsign(float x){
-
-    float absx = x;
-    if(x < 0) absx = -x;
-
-    return 1.0f / ((1.0f + absx) * (1.0f + absx));
+void d_softsign(const float* restrict upstream_gradients, const float* restrict z, const float* restrict a, float* restrict deltas, int size) {
+    (void)z;
+    for (int i = 0; i < size; i++) {
+        float abs_a = fabsf(a[i]);
+        float term = 1.0f - abs_a;
+        
+        deltas[i] = upstream_gradients[i] * (term * term);
+    }
 }
 
 const Activation SOFTSIGN = {
@@ -93,21 +102,63 @@ const Activation SOFTSIGN = {
 
 
 
-
-
-float ReLu(float x){
-    if(x < 0) return 0;
-    return x;
+void relu(const float* restrict inputs, float* restrict outputs, int size){
+    for(int i = 0; i < size; i++){
+        outputs[i] = fmaxf(0.0f, inputs[i]);
+    }
 }
 
-float d_ReLu(float x){
-    if(x < 0) return 0;
-    return 1.0f;
+void d_relu(const float* restrict upstream_gradients, const float* restrict z, const float* restrict a, float* restrict deltas, int size){
+
+    for(int i = 0; i < size; i++){
+        deltas[i] = (z[i] < 0.0f) ? 0.0f : upstream_gradients[i];
+    }
 }
 
 const Activation RELU = {
-    .act = ReLu,
-    .der = d_ReLu
+    .act = relu,
+    .der = d_relu
+};
+
+void softmax(const float* restrict inputs, float* restrict outputs, int size){
+    if(size <= 0) return;
+
+    float max_val = inputs[0];
+    for(int i = 0; i < size; i++){
+        if(inputs[i] > max_val) max_val = inputs[i];   
+    }
+
+    float sum = 0.0f;
+    for(int i = 0; i < size; i++){
+        outputs[i] = expf(inputs[i] - max_val);
+        sum += outputs[i];
+    }
+
+    float inv_sum = 1.0f / sum;
+    for(int i = 0; i < size; i++){
+        outputs[i] *= inv_sum;
+    }    
+    
+}
+
+void d_softmax(const float* restrict upstream_gradients, const float* restrict z, const float* restrict a, float* restrict deltas, int size){
+
+    (void) z;
+    float S = 0.0f;
+    for(int i = 0; i < size; i++){
+        S += a[i] * upstream_gradients[i];
+    }
+
+    for(int i = 0; i < size; i++){
+        deltas[i] = a[i] * (upstream_gradients[i] - S);
+    }
+
+
+}
+
+const Activation SOFTMAX = {
+    .act = softmax,
+    .der = d_softmax
 };
 
 //NOTE: More activations may be added later but probably not. This does the trick for what I wanna do

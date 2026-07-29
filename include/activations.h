@@ -1,12 +1,12 @@
 #ifndef ACTIVATIONS_H
 #define ACTIVATIONS_H
 
-typedef float (*activationFunction)(float);
-typedef float (*derivative)(float);
+typedef void (*activationFunction)(float* inputs, float* outputs, int size);
+typedef void (*back)(float* upstream_gradients, float* z, float* a, float* deltas, int size);
 
 typedef struct {
     activationFunction act;
-    derivative der;
+    back der;
 } Activation;
 
 extern const Activation IDENTITY;
@@ -15,5 +15,7 @@ extern const Activation SIGMOID;
 extern const Activation TANH;
 extern const Activation SOFTSIGN;
 extern const Activation RELU;
+
+extern const Activation SOFTMAX;
 
 #endif

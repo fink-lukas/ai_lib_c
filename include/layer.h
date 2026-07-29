@@ -12,6 +12,7 @@ typedef struct {
 
     float *last_inputs;
     float *outputs_pre_act;
+    float *outputs_post_act;
     float *deltas;
 
     //pointer to activation function
