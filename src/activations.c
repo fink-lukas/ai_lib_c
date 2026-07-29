@@ -109,6 +109,7 @@ void relu(const float* restrict inputs, float* restrict outputs, int size){
 }
 
 void d_relu(const float* restrict upstream_gradients, const float* restrict z, const float* restrict a, float* restrict deltas, int size){
+    (void)a;
 
     for(int i = 0; i < size; i++){
         deltas[i] = (z[i] < 0.0f) ? 0.0f : upstream_gradients[i];

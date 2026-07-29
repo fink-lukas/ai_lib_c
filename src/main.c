@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
+#include <math.h>
 // #include "layer.h"
 #include "activations.h"
 #include "network.h"
@@ -167,13 +168,20 @@ void print_guess(float *prediction, float *targetf)
         }
     }
 
+    for(int i = 0; i < 10; i++){
+        printf("[%f], ", prediction[i]);
+
+    }
     printf("Model guess: %d        Probability: %f        Target: %d\n", guess, max_prob, target);
+
 }
 
 int main()
 {
+    srand(time(NULL));
     int image_count = 0;
     int label_count = 0;
+
 
     float *images = load_mnist_images("data/train-images.idx3-ubyte", &image_count);
 
@@ -199,13 +207,15 @@ int main()
     printf("READING IMAGES AND LABELS COMPLETE\n\n");
 
     int layout[] = {784, 128, 10};
-    Activation activations[] = {RELU, SIGMOID};
+    Activation activations[] = {RELU, SOFTMAX};
 
     Network *net = network_create(layout, activations, 3);
     printf("NETWORK INITIALIZED\n");
 
     int num_epochs = 5;
     float learning_rate = 0.001f;
+
+    float average_Loss = 0;
 
     for (int epoch = 0; epoch < num_epochs; epoch++)
     {
@@ -220,25 +230,30 @@ int main()
 
             float loss_gradient[10];
 
-            for (int j = 0; j < 10; j++)
-            {
-                float pred = prediction[j];
-                if (pred < 1e-7f)
-                    pred = 1e-7f;
-                if (pred > 1.0f - 1e-7f)
-                    pred = 1.0f - 1e-7f;
+            float epsilon = 1e-7f;
 
-                loss_gradient[j] = (pred - current_label[j]) / (pred * (1.0f - pred));
+            float L_sum = 0.0f;
+
+            for(int j = 0; j < 10; j++){
+                L_sum += current_label[j] * log(prediction[j] + epsilon);
+                loss_gradient[j] = -(current_label[j] / (prediction[j] + epsilon));
             }
+
+            average_Loss -= L_sum;
+
+            
 
             network_backward(net, loss_gradient, learning_rate);
 
             if (i % 5000 == 0)
             {
-                printf("%d -> ", i);
-                print_guess(prediction, current_label);
+                printf(" -> %d \n", i);
             }
+
+            
         }
+        average_Loss = average_Loss / (float)image_count;
+        printf("AVERAGE LOSS: %f \n\n ============= \n\n", average_Loss);
     }
 
     printf("TRAINING COMPLETE");

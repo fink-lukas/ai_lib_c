@@ -1,8 +1,8 @@
 #ifndef ACTIVATIONS_H
 #define ACTIVATIONS_H
 
-typedef void (*activationFunction)(float* inputs, float* outputs, int size);
-typedef void (*back)(float* upstream_gradients, float* z, float* a, float* deltas, int size);
+typedef void (*activationFunction)(const float* restrict inputs, float* restrict outputs, int size);
+typedef void (*back)(const float* restrict upstream_gradients, const float* restrict z, const float* restrict a, float* restrict deltas, int size);
 
 typedef struct {
     activationFunction act;
