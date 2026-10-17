@@ -1,11 +1,11 @@
 #ifndef LAYER_H
 #define LAYER_H
 
-#include "perceptron.h"
 #include "activations.h"
 
 typedef struct {
-    Perceptron **neurons;
+    float *weights;
+    float *biases;
     int input_dim;
     int output_dim;
 

@@ -48,3 +48,6 @@ python_visualization/
 
 # training data
 data/
+
+# other
+old_code/

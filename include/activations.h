@@ -7,6 +7,7 @@ typedef void (*back)(const float* restrict upstream_gradients, const float* rest
 typedef struct {
     activationFunction act;
     back der;
+    float gain;
 } Activation;
 
 extern const Activation IDENTITY;

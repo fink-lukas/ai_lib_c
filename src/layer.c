@@ -1,12 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "layer.h"
-#include "perceptron.h"
 
 
 Layer* layer_create(int input_dim, int output_dim, Activation activation_function){
-    Layer* l = malloc(sizeof(Layer));
+    Layer* l = calloc(1, sizeof(Layer));
     if(l == NULL) {
         printf("ERROR: OOM");
         return NULL;
@@ -15,83 +15,49 @@ Layer* layer_create(int input_dim, int output_dim, Activation activation_functio
     l->input_dim = input_dim;
     l->output_dim = output_dim;
     
-    Perceptron** perceptrons = malloc(output_dim * sizeof(Perceptron*));
-    if(perceptrons == NULL) goto perceptrons_clean_up;
-    
-    l->neurons = perceptrons;
+    l->weights = malloc(output_dim * input_dim * sizeof(float));
 
+    l->biases = calloc(output_dim, sizeof(float));
 
-    l->last_inputs = malloc(input_dim * sizeof(float));
-    if(l->last_inputs == NULL) goto last_inputs_clean_up;
+    l->last_inputs = calloc(input_dim, sizeof(float));
 
-    l->deltas = malloc(output_dim * sizeof(float));
-    if(l->deltas == NULL) goto deltas_clean_up;
+    l->deltas = calloc(output_dim, sizeof(float));
 
-    l->outputs_pre_act = malloc(output_dim * sizeof(float));
-    if(l->outputs_pre_act == NULL) goto outputs_pre_act_clean_up;
+    l->outputs_pre_act = calloc(output_dim, sizeof(float));
 
-    l->outputs_post_act = malloc(output_dim * sizeof(float));
-    if(l->outputs_post_act == NULL) goto outputs_post_act_clean_up;
+    l->outputs_post_act = calloc(output_dim, sizeof(float));
 
-    for(int i = 0; i < l->input_dim; i++){
-        l->last_inputs[i] = 0.0f;
-    }
+    float scale = activation_function.gain * sqrtf(3.0f / (float)input_dim);
 
-    int preError = 0;
-    for(int i = 0; i < output_dim; i++){
-        perceptrons[i] = perceptron_create(input_dim);
-        if(perceptrons[i] == NULL){
-            preError = i;
-            goto individual_perceptrons_clean_up;
-        }
-        l->deltas[i] = 0.0f;
-        l->outputs_pre_act[i] = 0.0f;
+    for(int i = 0; i < output_dim * input_dim; i++){
+        float random_value = (float)rand() / (float)RAND_MAX * 2.0f - 1.0f;
+            l->weights[i] = random_value * scale;
     }
 
 
     l->activation_functions = activation_function;
 
-    return l;
-
-    individual_perceptrons_clean_up:
-        for(int i = 0; i < preError; i++){
-            perceptron_destroy(perceptrons[i]); 
-        }
-        free(l->outputs_post_act);
-
-    outputs_post_act_clean_up:
-        free(l->outputs_pre_act);
-
-    outputs_pre_act_clean_up:
-        free(l->deltas);
-    deltas_clean_up:
-        free(l->last_inputs);
-    last_inputs_clean_up:
-        free(l->neurons);
-    perceptrons_clean_up:
-        free(l);
-        printf("ERROR OOM during Layer creation");
+    if (!l->weights || !l->biases || !l->last_inputs || !l->deltas || !l->outputs_pre_act || !l->outputs_post_act){
+        fprintf(stderr, "ERROR: OOM during Layer creation\n");
+        layer_destroy(l);
         return NULL;
+    }
+
+    return l;
     
 }
 
 
 
 void layer_destroy(Layer *l){
-    if(l == NULL){
-        return;
-    }
-
-
-    for(int i = 0; i < l->output_dim; i++){
-        perceptron_destroy(l->neurons[i]);
-    }
-
+    if(l == NULL) return;
+    
     free(l->deltas);
     free(l->outputs_pre_act);
     free(l->outputs_post_act);
     free(l->last_inputs);
-    free(l->neurons);
+    free(l->weights);
+    free(l->biases);
     free(l);
 }
 
@@ -103,8 +69,13 @@ void layer_forward(Layer *l, float *inputs, float *outputs){
     }
 
     for(int output = 0; output < l->output_dim; output++){
-        float percVal = perceptron_forward(l->neurons[output], inputs);
-        l->outputs_pre_act[output] = percVal;
+
+        int offset = output * l->input_dim;
+        l->outputs_pre_act[output] = l->biases[output];
+        for(int weight = 0; weight < l->input_dim; weight++) {
+            l->outputs_pre_act[output] += l->weights[offset + weight] * inputs[weight];
+        }
+
     }
 
     l->activation_functions.act(l->outputs_pre_act, outputs, l->output_dim);
@@ -113,6 +84,7 @@ void layer_forward(Layer *l, float *inputs, float *outputs){
 }
 
 void layer_backward(Layer *l, float *upstream_gradients, float *downstream_gradients, float learning_rate){
+    if (l == NULL || upstream_gradients == NULL || downstream_gradients == NULL) return;
 
     l->activation_functions.der(upstream_gradients, l->outputs_pre_act, l->outputs_post_act, l->deltas, l->output_dim);
 
@@ -121,12 +93,14 @@ void layer_backward(Layer *l, float *upstream_gradients, float *downstream_gradi
     }
 
     for(int j = 0; j < l->output_dim; j++){
-        l->neurons[j]->bias -= learning_rate * l->deltas[j];
+        l->biases[j] -= learning_rate * l->deltas[j];
 
-        for(int i = 0; i < l->input_dim; i++){
-            downstream_gradients[i] += l->neurons[j]->weights[i] * l->deltas[j];
-            l->neurons[j]->weights[i] -= learning_rate * l->deltas[j] * l->last_inputs[i];
+        int offset = j * l->input_dim;
+        for(int weight = 0; weight < l->input_dim; weight++){
+            downstream_gradients[weight] += l->weights[offset + weight] * l->deltas[j];
+            l->weights[offset + weight] -= learning_rate * l->deltas[j] * l->last_inputs[weight];
         }
 
     }
+
 }

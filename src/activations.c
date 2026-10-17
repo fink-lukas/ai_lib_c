@@ -14,7 +14,8 @@ void d_identity(const float* restrict upstream_gradients, const float* restrict 
 
 const Activation IDENTITY = {
     .act = identity,
-    .der = d_identity
+    .der = d_identity,
+    .gain = 1.0f
 };
 
 
@@ -34,7 +35,8 @@ void d_binary_step(const float* restrict upstream_gradients, const float* restri
 
 const Activation BINARY_STEP = {
     .act = binary_step,
-    .der = d_binary_step
+    .der = d_binary_step,
+    .gain = 1.0f
 };
 
 
@@ -56,7 +58,8 @@ void d_sigmoid(const float* restrict upstream_gradients, const float* restrict z
 
 const Activation SIGMOID = {
     .act = sigmoid,
-    .der = d_sigmoid
+    .der = d_sigmoid,
+    .gain = 1.0f
 };
 
 
@@ -75,7 +78,8 @@ void d_net_tanh(const float* restrict upstream_gradients, const float* restrict 
 
 const Activation TANH = {
     .act = net_tanh,
-    .der = d_net_tanh
+    .der = d_net_tanh,
+    .gain = 1.667f //approx. 5/3
 };
 
 
@@ -97,7 +101,8 @@ void d_softsign(const float* restrict upstream_gradients, const float* restrict 
 
 const Activation SOFTSIGN = {
     .act = softsign,
-    .der = d_softsign
+    .der = d_softsign,
+    .gain = 1.0f
 };
 
 
@@ -118,7 +123,8 @@ void d_relu(const float* restrict upstream_gradients, const float* restrict z, c
 
 const Activation RELU = {
     .act = relu,
-    .der = d_relu
+    .der = d_relu,
+    .gain = 1.414f //approx. sqrt(2)
 };
 
 void softmax(const float* restrict inputs, float* restrict outputs, int size){
@@ -159,7 +165,8 @@ void d_softmax(const float* restrict upstream_gradients, const float* restrict z
 
 const Activation SOFTMAX = {
     .act = softmax,
-    .der = d_softmax
+    .der = d_softmax,
+    .gain = 1.0f
 };
 
 //NOTE: More activations may be added later but probably not. This does the trick for what I wanna do
