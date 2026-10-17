@@ -44,7 +44,7 @@ sources/
 
 # data for testing
 *.csv
-python_visualizations/
+python_visualization/
 
 # training data
 data/
